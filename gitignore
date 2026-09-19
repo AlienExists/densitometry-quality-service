@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+
+# Медицинские данные 
+data/
+*.dcm
+*.zip
+НД_для_обучения*/
+Для_теста*/
+
+# Веса моделей — хранить отдельно (S3, DVC, etc.)
+*.pt
+*.pth
+*.onnx
+*.bin
+model/weights/
+
+# Результаты
+*.xlsx
+*.csv
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Env
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
