@@ -1,0 +1,27 @@
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.viewer-canvas-wrapper {
+  position: relative;
+  display: inline-block;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.skeleton-block {
+  border-radius: 8px;
+}
+
+.row-violation {
+  background-color: #fff1f0;
+}
+.row-violation:hover > td {
+  background-color: #ffe3e0 !important;
+}

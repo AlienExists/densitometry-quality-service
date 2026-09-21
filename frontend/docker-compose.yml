@@ -1,0 +1,27 @@
+# Пример docker-compose для локальной разработки фронта + backend вместе.
+# Согласовать имя/порт backend-сервиса с Участником 5 и объединить с общим
+# docker-compose.yml команды (раздел 3.2 ТЗ).
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: /api
+        VITE_USE_MOCKS: 'false'
+    ports:
+      - '8080:80'
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # Заглушка — заменить на реальный сервис backend из репозитория команды.
+  # Оставлено, чтобы `docker compose up` можно было проверить локально:
+  # достаточно поменять `image`/`build` на актуальный backend.
+  backend:
+    image: hashicorp/http-echo:latest
+    command: ['-text=backend stub — замените на реальный сервис', '-listen=:8000']
+    ports:
+      - '8000:8000'
