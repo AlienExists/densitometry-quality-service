@@ -1,7 +1,10 @@
 import { apiClient } from './client';
-import type { AnalyzeResponse, BatchStatusResponse, HealthResponse } from '@/types/api';
+import type { AnalyzeResponse, HealthResponse } from '@/types/api';
+import type { AxiosProgressEvent } from 'axios';
 
-/** POST /analyze — одно DICOM-исследование (раздел 2.6 ТЗ, п.2) */
+/**
+ * POST /predict — один DICOM-файл → JSON
+ */
 export async function analyzeSingle(
   file: File,
   onProgress?: (percent: number) => void,
@@ -9,74 +12,48 @@ export async function analyzeSingle(
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await apiClient.post<AnalyzeResponse>('/analyze', formData, {
+  const response = await apiClient.post<AnalyzeResponse>('/predict', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
-    onUploadProgress: (evt) => {
+    onUploadProgress: (evt: AxiosProgressEvent) => {
       if (onProgress && evt.total) {
         onProgress(Math.round((evt.loaded / evt.total) * 100));
       }
     },
   });
+
   return response.data;
 }
 
-/** POST /batch — ZIP-архив с несколькими исследованиями */
+/**
+ * POST /predict/batch — ZIP-архив → скачивает xlsx
+ */
 export async function analyzeBatch(
   file: File,
   onProgress?: (percent: number) => void,
-): Promise<{ job_id: string }> {
+): Promise<void> {
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await apiClient.post<{ job_id: string }>('/batch', formData, {
+  const response = await apiClient.post('/predict/batch', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
-    onUploadProgress: (evt) => {
+    responseType: 'blob',
+    onUploadProgress: (evt: AxiosProgressEvent) => {
       if (onProgress && evt.total) {
         onProgress(Math.round((evt.loaded / evt.total) * 100));
       }
     },
   });
-  return response.data;
+
+  // Скачиваем xlsx автоматически
+  const url = URL.createObjectURL(new Blob([response.data as BlobPart]));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'results.xlsx';
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
-/** GET /batch/{job_id}/status — прогресс батча, используем для polling */
-export async function getBatchStatus(jobId: string): Promise<BatchStatusResponse> {
-  const response = await apiClient.get<BatchStatusResponse>(`/batch/${jobId}/status`);
-  return response.data;
-}
-
-/** Хелпер: опрашивает статус батча раз в intervalMs, пока не завершится или не отменят */
-export function pollBatchStatus(
-  jobId: string,
-  onUpdate: (status: BatchStatusResponse) => void,
-  onError: (error: unknown) => void,
-  intervalMs = 2000,
-): () => void {
-  let cancelled = false;
-
-  const tick = async () => {
-    if (cancelled) return;
-    try {
-      const status = await getBatchStatus(jobId);
-      if (cancelled) return;
-      onUpdate(status);
-      if (status.status === 'pending' || status.status === 'processing') {
-        setTimeout(tick, intervalMs);
-      }
-    } catch (err) {
-      if (!cancelled) onError(err);
-    }
-  };
-
-  tick();
-
-  // возвращаем функцию отмены — вызывается по кнопке "Отменить"
-  return () => {
-    cancelled = true;
-  };
-}
-
-/** GET /health — индикатор "сервер жив" в шапке */
+/** GET /health */
 export async function checkHealth(): Promise<HealthResponse> {
   const response = await apiClient.get<HealthResponse>('/health', { timeout: 5000 });
   return response.data;

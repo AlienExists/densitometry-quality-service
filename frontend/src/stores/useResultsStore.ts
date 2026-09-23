@@ -1,39 +1,26 @@
-import { create } from 'zustand';
-import type { AnalyzeResponse, ImageResult } from '@/types/api';
+import { create, type StateCreator } from 'zustand';
+import type { AnalyzeResponse } from '@/types/api';
 
 interface ResultsState {
-  /** Все проанализированные исследования за сессию (для таблицы/экспорта) */
   history: AnalyzeResponse[];
-  /** Текущее исследование, открытое во вьюере */
-  activeStudy: AnalyzeResponse | null;
-  /** Текущее изображение внутри исследования (до 3, раздел 2.4 ТЗ) */
-  activeImageIndex: number;
-
+  activeResult: AnalyzeResponse | null;
   addResult: (result: AnalyzeResponse) => void;
-  setActiveStudy: (study: AnalyzeResponse | null) => void;
-  setActiveImageIndex: (index: number) => void;
+  setActiveResult: (result: AnalyzeResponse | null) => void;
   clearHistory: () => void;
 }
 
-export const useResultsStore = create<ResultsState>((set) => ({
+const store: StateCreator<ResultsState> = (set) => ({
   history: [],
-  activeStudy: null,
-  activeImageIndex: 0,
+  activeResult: null,
 
-  addResult: (result) =>
-    set((state) => ({
+  addResult: (result: AnalyzeResponse) =>
+    set((state: ResultsState) => ({
       history: [result, ...state.history],
-      activeStudy: result,
-      activeImageIndex: 0,
+      activeResult: result,
     })),
 
-  setActiveStudy: (study) => set({ activeStudy: study, activeImageIndex: 0 }),
-  setActiveImageIndex: (index) => set({ activeImageIndex: index }),
-  clearHistory: () => set({ history: [], activeStudy: null, activeImageIndex: 0 }),
-}));
+  setActiveResult: (result: AnalyzeResponse | null) => set({ activeResult: result }),
+  clearHistory: () => set({ history: [], activeResult: null }),
+});
 
-/** Хелпер: текущая активная картинка исследования */
-export function getActiveImage(): ImageResult | null {
-  const { activeStudy, activeImageIndex } = useResultsStore.getState();
-  return activeStudy?.images[activeImageIndex] ?? null;
-}
+export const useResultsStore = create<ResultsState>(store);
