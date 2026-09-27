@@ -1,26 +1,44 @@
-import { Space, Typography, Tabs } from 'antd';
-import { UploadZone } from '@/components/Upload/UploadZone';
-import { BatchUpload } from '@/components/Upload/BatchUpload';
+import { useState } from 'react';
+import { PageHeading, Segmented } from '@/components/ui';
+import { BatchUpload } from '@/components/upload/BatchUpload';
+import { FolderMonitor } from '@/components/upload/FolderMonitor';
+import { SingleUpload } from '@/components/upload/SingleUpload';
+import { useBackendStatus } from '@/hooks/useBackendStatus';
 
-const { Title, Paragraph } = Typography;
+type Mode = 'single' | 'batch' | 'monitor';
+
+const MODES: { value: Mode; label: string }[] = [
+  { value: 'single', label: 'Одно исследование' },
+  { value: 'batch', label: 'Пакетная загрузка' },
+  { value: 'monitor', label: 'Мониторинг папки' },
+];
 
 export function UploadPage() {
-  return (
-    <Space direction="vertical" size="large" style={{ width: '100%' }}>
-      <div>
-        <Title level={3}>Загрузка исследования</Title>
-        <Paragraph type="secondary">
-          Загрузите одно DICOM-исследование или пакет исследований в ZIP-архиве для
-          автоматической оценки качества.
-        </Paragraph>
-      </div>
+  const [mode, setMode] = useState<Mode>('single');
+  const backend = useBackendStatus();
 
-      <Tabs
-        items={[
-          { key: 'single', label: 'Одно исследование', children: <UploadZone /> },
-          { key: 'batch', label: 'Пакетная загрузка', children: <BatchUpload /> },
-        ]}
+  return (
+    <main className="page">
+      <PageHeading
+        title="Загрузка исследований"
+        subtitle="Одно исследование, пакет из ZIP-архива или автоматический мониторинг папки"
       />
-    </Space>
+
+      {backend === 'offline' && (
+        <div className="banner" role="status">
+          Сервер анализа не отвечает. Проверьте, что backend запущен: загрузка заработает, как
+          только он станет доступен.
+        </div>
+      )}
+
+      <section className="panel">
+        <Segmented options={MODES} value={mode} onChange={setMode} label="Способ загрузки" />
+        <div className="panel__body">
+          {mode === 'single' && <SingleUpload />}
+          {mode === 'batch' && <BatchUpload />}
+          {mode === 'monitor' && <FolderMonitor />}
+        </div>
+      </section>
+    </main>
   );
 }
