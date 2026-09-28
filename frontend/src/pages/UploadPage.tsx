@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { PageHeading, Segmented } from '@/components/ui';
-import { BatchUpload } from '@/components/upload/BatchUpload';
-import { FolderMonitor } from '@/components/upload/FolderMonitor';
-import { SingleUpload } from '@/components/upload/SingleUpload';
+import { BatchUpload } from '@/components/upload-modes/BatchUpload';
+import { FolderMonitor } from '@/components/upload-modes/FolderMonitor';
+import { SingleUpload } from '@/components/upload-modes/SingleUpload';
 import { useBackendStatus } from '@/hooks/useBackendStatus';
 
 type Mode = 'single' | 'batch' | 'monitor';
