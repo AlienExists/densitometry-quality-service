@@ -1,0 +1,8 @@
+pydicom>=3.0
+numpy
+pandas
+openpyxl
+pillow
+scikit-learn
+torch
+torchvision
