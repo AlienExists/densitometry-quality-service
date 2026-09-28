@@ -3,9 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.routers import predict, batch
 
 app = FastAPI(
-    title="",
-    description="",
-    version="",
+    title="Densitometry QC API",
+    description="Оценка качества",
+    version="0.0.1",
 )
 
 app.add_middleware(
