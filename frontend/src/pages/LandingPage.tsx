@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
 import { Link } from 'react-router-dom';
 import { Artwork } from '@/components/ui';
 import { ChevronRightIcon } from '@/components/Icons';
@@ -22,6 +22,10 @@ const STEPS = [
 ];
 
 const AUTOPLAY_MS = 8000;
+const REVEAL_STEP_MS = 90;
+
+const revealDelay = (index: number) =>
+  ({ '--reveal-delay': `${index * REVEAL_STEP_MS}ms` }) as CSSProperties;
 
 function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState(
@@ -37,6 +41,59 @@ function useReducedMotion(): boolean {
   }, []);
 
   return reduced;
+}
+
+function useRevealOnScroll(root: RefObject<HTMLElement>) {
+  useEffect(() => {
+    const container = root.current;
+    if (!container) return;
+
+    const items = Array.from(container.querySelectorAll<HTMLElement>('[data-reveal]'));
+    const showAll = () => items.forEach((item) => item.classList.add('is-visible'));
+
+    if (
+      typeof IntersectionObserver === 'undefined' ||
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    ) {
+      showAll();
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.15, rootMargin: '0px 0px -8% 0px' },
+    );
+
+    items.forEach((item) => observer.observe(item));
+
+    let frame = 0;
+    const revealPassed = () => {
+      frame = 0;
+      items.forEach((item) => {
+        if (!item.classList.contains('is-visible') && item.getBoundingClientRect().top < window.innerHeight) {
+          item.classList.add('is-visible');
+          observer.unobserve(item);
+        }
+      });
+    };
+    const handleScroll = () => {
+      if (!frame) frame = requestAnimationFrame(revealPassed);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', handleScroll);
+      observer.disconnect();
+    };
+  }, [root]);
 }
 
 function usePointerTilt(target: RefObject<HTMLElement>, enabled: boolean) {
@@ -163,8 +220,8 @@ function Hero() {
 function Stats() {
   return (
     <section className="stats" aria-label="Ключевые параметры">
-      {STATS.map((stat) => (
-        <div key={stat.value} className="stats__item">
+      {STATS.map((stat, i) => (
+        <div key={stat.value} className="stats__item" data-reveal style={revealDelay(i)}>
           <p className="stats__value">{stat.value}</p>
           <p className="stats__caption">{stat.caption}</p>
         </div>
@@ -176,7 +233,7 @@ function Stats() {
 function HowItWorks() {
   return (
     <section className="how" aria-labelledby="how-title">
-      <div className="how__heading">
+      <div className="how__heading" data-reveal>
         <h2 id="how-title" className="section-title">
           Как это работает
         </h2>
@@ -184,7 +241,7 @@ function HowItWorks() {
       </div>
 
       <div className="how__grid">
-        <div className="how__visual" aria-hidden="true">
+        <div className="how__visual" aria-hidden="true" data-reveal>
           <div className="how__sway">
             <div className="how__breath">
               <Artwork src="/images/how-it-works.png" alt="" className="how__image" />
@@ -195,7 +252,7 @@ function HowItWorks() {
 
         <ol className="how__steps">
           {STEPS.map((step, i) => (
-            <li key={step.title} className="step">
+            <li key={step.title} className="step" data-reveal style={revealDelay(i + 1)}>
               <span className="step__number" aria-hidden="true">
                 {i + 1}
               </span>
@@ -214,13 +271,13 @@ function HowItWorks() {
 function Footer() {
   return (
     <footer className="footer">
-      <div className="footer__column">
+      <div className="footer__column" data-reveal style={revealDelay(0)}>
         <h2 className="footer__title">BonAI</h2>
         <p className="footer__text">
           Хакатон «Лидеры цифровой трансформации» • Центр диагностики и телемедицины, 2026
         </p>
       </div>
-      <div className="footer__column">
+      <div className="footer__column" data-reveal style={revealDelay(1)}>
         <h2 className="footer__title">Область анализа</h2>
         <p className="footer__text">
           Поясничный отдел позвоночника •
@@ -228,7 +285,7 @@ function Footer() {
           Проксимальный отдел бедра
         </p>
       </div>
-      <div className="footer__column">
+      <div className="footer__column" data-reveal style={revealDelay(2)}>
         <h2 className="footer__title">Приложение</h2>
         <nav className="footer__links" aria-label="Разделы приложения">
           <Link to="/upload">Загрузка</Link>
@@ -241,8 +298,11 @@ function Footer() {
 }
 
 export function LandingPage() {
+  const rootRef = useRef<HTMLElement>(null);
+  useRevealOnScroll(rootRef);
+
   return (
-    <main className="landing">
+    <main className="landing" ref={rootRef}>
       <Hero />
       <Stats />
       <HowItWorks />
