@@ -6,17 +6,31 @@ import { ArchiveIcon, CheckIcon, CrossIcon } from '@/components/Icons';
 import { ProgressBar } from '@/components/ui';
 import { downloadBlob, hasExtension } from '@/lib/files';
 import { pluralRu } from '@/lib/labels';
+import { predictBatchArchive } from '@/api/predict';
 import { analyzeArchive, type BatchSummary } from '@/services/analysis';
 
 type Task =
   | { stage: 'idle' }
   | { stage: 'uploading'; fileName: string; progress: number }
   | { stage: 'processing'; fileName: string }
-  | { stage: 'done'; fileName: string; summary: BatchSummary }
+  | { stage: 'done'; fileName: string; file: File; summary: BatchSummary }
   | { stage: 'error'; fileName: string; message: string };
+
+type ArchiveState = { status: 'idle' } | { status: 'loading' } | { status: 'error'; message: string };
 
 export function BatchUpload() {
   const [task, setTask] = useState<Task>({ stage: 'idle' });
+  const [archive, setArchive] = useState<ArchiveState>({ status: 'idle' });
+
+  const downloadWithVisuals = async (file: File) => {
+    setArchive({ status: 'loading' });
+    try {
+      downloadBlob(await predictBatchArchive(file), 'results.zip');
+      setArchive({ status: 'idle' });
+    } catch (error) {
+      setArchive({ status: 'error', message: getErrorMessage(error) });
+    }
+  };
 
   const handleFile = async (file: File) => {
     if (!hasExtension(file, '.zip')) {
@@ -34,7 +48,8 @@ export function BatchUpload() {
             : { stage: 'uploading', fileName: file.name, progress },
         );
       });
-      setTask({ stage: 'done', fileName: file.name, summary });
+      setArchive({ status: 'idle' });
+      setTask({ stage: 'done', fileName: file.name, file, summary });
     } catch (error) {
       setTask({ stage: 'error', fileName: file.name, message: getErrorMessage(error) });
     }
@@ -90,6 +105,21 @@ export function BatchUpload() {
               Скачать отчёт
             </button>
           </div>
+          <button
+            type="button"
+            className="text-button"
+            disabled={archive.status === 'loading'}
+            onClick={() => void downloadWithVisuals(task.file)}
+          >
+            {archive.status === 'loading'
+              ? 'Готовим архив с визуализациями…'
+              : 'Скачать отчёт с визуализациями нарушений (.zip)'}
+          </button>
+          {archive.status === 'error' && (
+            <p className="dropzone__error" role="alert">
+              {archive.message}
+            </p>
+          )}
           <button type="button" className="text-button" onClick={reset}>
             Загрузить другой архив
           </button>

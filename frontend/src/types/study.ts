@@ -19,4 +19,11 @@ export interface StudyRecord {
   receivedAt: number;
   result: PredictionResult;
   preview: DicomPreview | null;
+  file?: File;
 }
+
+export type VisualState =
+  | { status: 'loading' }
+  | { status: 'ready'; url: string }
+  | { status: 'none' }
+  | { status: 'error'; message: string };
