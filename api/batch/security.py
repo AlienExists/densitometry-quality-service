@@ -10,7 +10,7 @@ from typing import List
 logger = logging.getLogger(__name__)
 
 
-MAX_FILES = 500
+MAX_FILES = 20000
 MAX_TOTAL_SIZE = 5 * 1024 * 1024 * 1024  # 5 GB
 MAX_SINGLE_SIZE = 500 * 1024 * 1024      # 500 MB
 MAX_COMPRESSION_RATIO = 100              # zip-bomb защита
