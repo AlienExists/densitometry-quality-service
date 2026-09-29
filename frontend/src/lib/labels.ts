@@ -5,8 +5,12 @@ interface RegionLabel {
 
 const FEMUR: RegionLabel = { short: 'Бедро', full: 'Проксимальный отдел бедра' };
 
+const SPINE: RegionLabel = { short: 'Поясничный', full: 'Поясничный отдел позвоночника' };
+
 const REGIONS: Record<string, RegionLabel> = {
-  lumbar_spine: { short: 'Поясничный', full: 'Поясничный отдел позвоночника' },
+  'поясничный отдел позвоночника': SPINE,
+  'проксимальный отдел бедра': FEMUR,
+  lumbar_spine: SPINE,
   proximal_femur: FEMUR,
   femur: FEMUR,
   hip: FEMUR,
@@ -15,7 +19,7 @@ const REGIONS: Record<string, RegionLabel> = {
 const UNKNOWN_REGION: RegionLabel = { short: 'Не определена', full: 'Область не определена' };
 
 export function regionLabel(region: string): RegionLabel {
-  return REGIONS[region.toLowerCase()] ?? UNKNOWN_REGION;
+  return REGIONS[region.trim().toLowerCase()] ?? UNKNOWN_REGION;
 }
 
 const VIOLATIONS: Record<string, string> = {

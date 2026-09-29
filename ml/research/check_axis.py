@@ -1,6 +1,10 @@
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "qc"))
+import sys
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 from PIL import Image, ImageDraw

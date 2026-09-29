@@ -1,6 +1,11 @@
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "qc"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import sys
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 from PIL import Image, ImageDraw
@@ -8,7 +13,10 @@ from PIL import Image, ImageDraw
 from contract import REGION_LUMBAR_SPINE, VIOLATION_FOREIGN_OBJECT
 from foreign_objects import foreign_object_scores
 from preprocessing import read_dicom, to_unit_range
-from pydicom.pixels import apply_modality_lut
+try:
+    from pydicom.pixels import apply_modality_lut
+except ImportError:
+    from pydicom.pixel_data_handlers.util import apply_modality_lut
 
 FEATURES = ["hot_area_mm2", "offspine_hot_area_mm2", "peak_excess", "edge_peak"]
 

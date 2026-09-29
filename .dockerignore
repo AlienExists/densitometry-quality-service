@@ -1,0 +1,9 @@
+.git
+**/__pycache__
+**/*.pyc
+frontend/node_modules
+frontend/dist
+ml
+data
+*.zip
+*.dcm

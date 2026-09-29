@@ -6,7 +6,10 @@ import warnings
 import numpy as np
 import pydicom
 from PIL import Image
-from pydicom.pixels import apply_modality_lut, apply_voi_lut
+try:
+    from pydicom.pixels import apply_modality_lut, apply_voi_lut
+except ImportError:
+    from pydicom.pixel_data_handlers.util import apply_modality_lut, apply_voi_lut
 
 from contract import IMAGENET_MEAN, IMAGENET_STD, PAD_HEIGHT, REGION_INPUT_SIZE, region_from_size
 
