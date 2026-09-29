@@ -24,6 +24,13 @@ export function UploadPage() {
         subtitle="Одно исследование, пакет из ZIP-архива или автоматический мониторинг папки"
       />
 
+      {backend === 'demo' && (
+        <div className="banner banner--info" role="status">
+          Сервер работает в демо-режиме: веса модели не подключены, поэтому все снимки получают
+          оценку «в норме».
+        </div>
+      )}
+
       {backend === 'offline' && (
         <div className="banner" role="status">
           Сервер анализа не отвечает. Проверьте, что backend запущен: загрузка заработает, как

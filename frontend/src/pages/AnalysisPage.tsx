@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PageHeading, Segmented } from '@/components/ui';
 import {
@@ -6,15 +7,70 @@ import {
   violationCodes,
   violationLabel,
 } from '@/lib/labels';
+import { loadVisual, needsVisual } from '@/services/analysis';
 import { useResultsStore } from '@/stores/results';
-import type { StudyRecord } from '@/types/study';
+import type { StudyRecord, VisualState } from '@/types/study';
+
+type ViewMode = 'scan' | 'visual';
+
+const VIEW_OPTIONS: { value: ViewMode; label: string }[] = [
+  { value: 'scan', label: 'Снимок' },
+  { value: 'visual', label: 'Нарушения' },
+];
+
+function ViewerControls({
+  visual,
+  mode,
+  onChange,
+}: {
+  visual: VisualState | undefined;
+  mode: ViewMode;
+  onChange: (mode: ViewMode) => void;
+}) {
+  if (visual?.status === 'loading') {
+    return <p className="viewer__badge">Готовим визуализацию…</p>;
+  }
+  if (visual?.status !== 'ready') return null;
+  return (
+    <Segmented
+      className="segmented--compact viewer__switch"
+      label="Режим просмотра"
+      value={mode}
+      onChange={onChange}
+      options={VIEW_OPTIONS}
+    />
+  );
+}
 
 function ScanViewer({ record }: { record: StudyRecord }) {
   const { preview, fileName, source } = record;
+  const visual = useResultsStore((s) => s.visuals[record.id]);
+  const [mode, setMode] = useState<ViewMode>('scan');
+
+  useEffect(() => {
+    setMode('scan');
+    if (needsVisual(record)) void loadVisual(record);
+  }, [record]);
+
+  const controls = <ViewerControls visual={visual} mode={mode} onChange={setMode} />;
+
+  if (mode === 'visual' && visual?.status === 'ready') {
+    return (
+      <div className="viewer">
+        {controls}
+        <img
+          className="viewer__image"
+          src={visual.url}
+          alt={`Визуализация нарушений на снимке ${fileName}`}
+        />
+      </div>
+    );
+  }
 
   if (preview?.url) {
     return (
       <div className="viewer">
+        {controls}
         <img className="viewer__image" src={preview.url} alt={`Снимок ${fileName}`} />
       </div>
     );
@@ -27,6 +83,7 @@ function ScanViewer({ record }: { record: StudyRecord }) {
 
   return (
     <div className="viewer viewer--empty">
+      {controls}
       <span className="viewer__scanline" aria-hidden="true" />
       <p className="viewer__message">{message}</p>
     </div>
@@ -90,6 +147,14 @@ function Verdict({ record }: { record: StudyRecord }) {
           <dt>Время обработки</dt>
           <dd>{formatSeconds(result.time_of_processing)}</dd>
         </div>
+        {!failedProcessing && result.quality_prob !== null && (
+          <div className="facts__item">
+            <dt>Вероятность нарушения</dt>
+            <dd className={result.quality_class === 1 ? 'text-danger' : 'text-ok'}>
+              {Math.round(result.quality_prob * 100)}%
+            </dd>
+          </div>
+        )}
         <div className="facts__item facts__item--wide">
           <dt>Файл</dt>
           <dd className="facts__mono">{record.fileName}</dd>

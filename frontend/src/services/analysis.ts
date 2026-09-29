@@ -1,4 +1,5 @@
-import { predictBatch, predictSingle } from '@/api/predict';
+import { getErrorMessage } from '@/api/client';
+import { fetchVisual, predictBatch, predictSingle } from '@/api/predict';
 import { baseName, createId } from '@/lib/files';
 import { createPreview } from '@/lib/preview';
 import { useResultsStore } from '@/stores/results';
@@ -39,9 +40,10 @@ export async function analyzeDicomFile(
   const preview = await previewTask;
   const receivedAt = Date.now();
 
-  const records = results.map((result) =>
-    buildRecord(result, file.name, source, preview, receivedAt),
-  );
+  const records = results.map((result) => ({
+    ...buildRecord(result, file.name, source, preview, receivedAt),
+    file,
+  }));
   useResultsStore.getState().addRecords(records, source === 'single');
   return records;
 }
@@ -70,4 +72,37 @@ export async function analyzeArchive(
   ).length;
 
   return { total: results.length, passed: results.length - failed, failed, report };
+}
+
+export function needsVisual(record: StudyRecord): boolean {
+  return (
+    Boolean(record.file) &&
+    record.result.quality_class === 1 &&
+    record.result.processing_status.toLowerCase() === 'success'
+  );
+}
+
+export async function loadVisual(record: StudyRecord): Promise<void> {
+  const store = useResultsStore.getState();
+  if (!record.file || !store.visualsSupported || store.visuals[record.id]) return;
+
+  store.setVisual(record.id, { status: 'loading' });
+  try {
+    const response = await fetchVisual(record.file);
+    if (response.kind === 'unsupported') {
+      useResultsStore.getState().disableVisuals();
+      useResultsStore.getState().setVisual(record.id, { status: 'none' });
+      return;
+    }
+    useResultsStore
+      .getState()
+      .setVisual(
+        record.id,
+        response.kind === 'image'
+          ? { status: 'ready', url: URL.createObjectURL(response.blob) }
+          : { status: 'none' },
+      );
+  } catch (error) {
+    useResultsStore.getState().setVisual(record.id, { status: 'error', message: getErrorMessage(error) });
+  }
 }
