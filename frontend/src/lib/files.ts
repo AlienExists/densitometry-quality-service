@@ -32,16 +32,21 @@ export function downloadBlob(blob: Blob, fileName: string): void {
 export function downloadReport(records: StudyRecord[], fileName = 'results.xlsx'): void {
   const rows = [...records]
     .sort((a, b) => a.receivedAt - b.receivedAt)
-    .map(({ result }) => [
-      result.path_to_study,
-      result.study_uid,
-      result.image_uid,
-      result.anatomical_region,
-      result.quality_class,
-      result.violation_type ?? '',
-      result.processing_status,
-      Number(result.time_of_processing.toFixed(4)),
-    ]);
+    .map(({ result }) => {
+      const failed = result.processing_status.toLowerCase() !== 'success';
+      const values: Record<(typeof REPORT_COLUMNS)[number], string | number> = {
+        path_to_study: result.path_to_study,
+        study_uid: result.study_uid,
+        image_uid: result.image_uid,
+        anatomical_region: result.anatomical_region,
+        quality_class: failed ? '' : result.quality_class,
+        quality_prob: result.quality_prob ?? '',
+        violation_type: result.violation_type ?? '',
+        processing_status: result.processing_status,
+        time_of_processing: Number(result.time_of_processing.toFixed(3)),
+      };
+      return REPORT_COLUMNS.map((column) => values[column]);
+    });
 
   const sheet = XLSX.utils.aoa_to_sheet([[...REPORT_COLUMNS], ...rows]);
   const workbook = XLSX.utils.book_new();
