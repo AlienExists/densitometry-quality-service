@@ -6,6 +6,12 @@ type Row = Record<string, unknown>;
 const text = (value: unknown): string =>
   value === null || value === undefined ? '' : String(value).trim();
 
+const toOptionalNumber = (value: unknown): number | null => {
+  if (text(value) === '') return null;
+  const n = typeof value === 'number' ? value : parseFloat(text(value).replace(',', '.'));
+  return Number.isFinite(n) ? n : null;
+};
+
 const toNumber = (value: unknown): number => {
   const n = typeof value === 'number' ? value : parseFloat(text(value).replace(',', '.'));
   return Number.isFinite(n) ? n : 0;
@@ -20,6 +26,7 @@ function toResult(row: Row): PredictionResult {
     image_uid: text(row.image_uid),
     anatomical_region: text(row.anatomical_region) || 'unknown',
     quality_class: toNumber(row.quality_class) >= 1 ? 1 : 0,
+    quality_prob: toOptionalNumber(row.quality_prob),
     violation_type: violation || null,
     processing_status: text(row.processing_status) || 'Success',
     time_of_processing: toNumber(row.time_of_processing),

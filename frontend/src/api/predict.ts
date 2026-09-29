@@ -1,4 +1,4 @@
-import type { AxiosProgressEvent } from 'axios';
+import axios, { type AxiosProgressEvent } from 'axios';
 import { apiClient } from './client';
 import { parseReport } from './report';
 import type { PredictionResult } from '@/types/api';
@@ -57,11 +57,45 @@ export async function predictBatch(
   };
 }
 
-export async function checkHealth(): Promise<boolean> {
+export async function predictBatchArchive(file: File): Promise<Blob> {
+  const response = await apiClient.post<Blob>('/predict/batch/archive', toForm(file), {
+    responseType: 'blob',
+  });
+  return response.data;
+}
+
+export type VisualResponse = { kind: 'image'; blob: Blob } | { kind: 'none' } | { kind: 'unsupported' };
+
+export async function fetchVisual(file: File): Promise<VisualResponse> {
   try {
-    await apiClient.get('/health', { timeout: 5000 });
-    return true;
+    const response = await apiClient.post<Blob>('/predict/visual', toForm(file), {
+      responseType: 'blob',
+      validateStatus: (status) => status === 200 || status === 204,
+    });
+    if (response.status === 204 || !response.data || response.data.size === 0) {
+      return { kind: 'none' };
+    }
+    return { kind: 'image', blob: response.data };
+  } catch (error) {
+    if (axios.isAxiosError(error) && (error.response?.status === 404 || error.response?.status === 405)) {
+      return { kind: 'unsupported' };
+    }
+    throw error;
+  }
+}
+
+export interface HealthInfo {
+  online: boolean;
+  dummy: boolean;
+}
+
+export async function checkHealth(): Promise<HealthInfo> {
+  try {
+    const { data } = await apiClient.get<{ model?: { dummy?: boolean } }>('/health', {
+      timeout: 5000,
+    });
+    return { online: true, dummy: Boolean(data?.model?.dummy) };
   } catch {
-    return false;
+    return { online: false, dummy: false };
   }
 }

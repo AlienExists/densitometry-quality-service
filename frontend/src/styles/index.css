@@ -290,6 +290,12 @@ a {
   cursor: pointer;
 }
 
+.text-button:disabled {
+  color: var(--muted);
+  cursor: progress;
+  text-decoration: none;
+}
+
 .text-button:hover {
   text-decoration: underline;
   text-underline-offset: 4px;
@@ -503,6 +509,11 @@ a {
   text-align: center;
 }
 
+.banner--info {
+  border-color: rgba(93, 200, 192, 0.35);
+  background: rgba(93, 200, 192, 0.08);
+}
+
 .monitor {
   display: flex;
   flex-direction: column;
@@ -710,6 +721,35 @@ a {
   height: 100%;
   max-height: 72vh;
   object-fit: contain;
+}
+
+.viewer__switch {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  z-index: 2;
+  width: auto;
+  transform: translateX(-50%);
+}
+
+.viewer__switch .segmented__item {
+  min-height: 40px;
+  padding: 0 22px;
+  font-size: 15px;
+}
+
+.viewer__badge {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  z-index: 2;
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: rgba(23, 44, 50, 0.9);
+  color: var(--muted-strong);
+  font-size: 14px;
+  white-space: nowrap;
+  transform: translateX(-50%);
 }
 
 .viewer--empty {
