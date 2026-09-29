@@ -8,8 +8,10 @@ pydantic==2.7.1
 pydicom==2.4.4
 numpy==1.26.4
 opencv-python-headless==4.9.0.80
- 
-# ML
-# torch==2.3.0
-# torchvision==0.18.0
- 
+
+# ML-часть (qc/)
+pandas
+pillow
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+torchvision
