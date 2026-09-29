@@ -1,6 +1,7 @@
 import { getErrorMessage } from '@/api/client';
 import { fetchVisual, predictBatch, predictSingle } from '@/api/predict';
 import { baseName, createId } from '@/lib/files';
+import { matchArchiveFiles, readArchive } from '@/lib/archive';
 import { createPreview } from '@/lib/preview';
 import { useResultsStore } from '@/stores/results';
 import type { PredictionResult } from '@/types/api';
@@ -59,12 +60,16 @@ export async function analyzeArchive(
   file: File,
   onProgress?: (percent: number) => void,
 ): Promise<BatchSummary> {
+  const archiveTask = readArchive(file).catch(() => []);
   const { results, report } = await predictBatch(file, onProgress);
+  const files = matchArchiveFiles(results, await archiveTask);
   const receivedAt = Date.now();
 
-  const records = results.map((result, index) =>
-    buildRecord(result, `file_${index + 1}.dcm`, 'batch', null, receivedAt + index),
-  );
+  const records = results.map((result, index) => {
+    const record = buildRecord(result, `file_${index + 1}.dcm`, 'batch', null, receivedAt + index);
+    const archived = files[index];
+    return archived ? { ...record, file: archived } : record;
+  });
   useResultsStore.getState().addRecords(records, false);
 
   const failed = results.filter(
@@ -104,5 +109,18 @@ export async function loadVisual(record: StudyRecord): Promise<void> {
       );
   } catch (error) {
     useResultsStore.getState().setVisual(record.id, { status: 'error', message: getErrorMessage(error) });
+  }
+}
+
+const previewsInFlight = new Set<string>();
+
+export async function loadPreview(record: StudyRecord): Promise<void> {
+  if (!record.file || record.preview || previewsInFlight.has(record.id)) return;
+  previewsInFlight.add(record.id);
+  try {
+    const preview = await createPreview(record.file);
+    useResultsStore.getState().setPreview(record.id, preview);
+  } finally {
+    previewsInFlight.delete(record.id);
   }
 }

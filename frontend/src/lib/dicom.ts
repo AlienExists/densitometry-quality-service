@@ -297,7 +297,12 @@ function concat(parts: Uint8Array[]): Uint8Array {
   return result;
 }
 
-export function decodeDicom(buffer: ArrayBuffer): DecodedDicom {
+export interface DicomHeader {
+  studyUid?: string;
+  sopUid?: string;
+}
+
+function openDataset(buffer: ArrayBuffer): { parser: Parser; offset: number; transferSyntax: string } {
   const parser = new Parser(buffer);
   const bytes = new Uint8Array(buffer);
   let offset = 0;
@@ -327,8 +332,24 @@ export function decodeDicom(buffer: ArrayBuffer): DecodedDicom {
     throw new DicomFormatError('Кодировка этого DICOM-файла не поддерживается для предпросмотра.');
   }
 
-  const explicit = transferSyntax !== IMPLICIT_LE;
-  parser.parseElements(offset, explicit, true);
+  parser.parseElements(offset, transferSyntax !== IMPLICIT_LE, true);
+  return { parser, offset, transferSyntax };
+}
+
+export function readDicomHeader(buffer: ArrayBuffer): DicomHeader | null {
+  try {
+    const { parser } = openDataset(buffer);
+    return {
+      studyUid: parser.string(TAGS.studyInstanceUid),
+      sopUid: parser.string(TAGS.sopInstanceUid),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function decodeDicom(buffer: ArrayBuffer): DecodedDicom {
+  const { parser, transferSyntax } = openDataset(buffer);
 
   const decoded: DecodedDicom = {
     studyUid: parser.string(TAGS.studyInstanceUid),

@@ -7,7 +7,7 @@ import {
   violationCodes,
   violationLabel,
 } from '@/lib/labels';
-import { loadVisual, needsVisual } from '@/services/analysis';
+import { loadPreview, loadVisual, needsVisual } from '@/services/analysis';
 import { useResultsStore } from '@/stores/results';
 import type { StudyRecord, VisualState } from '@/types/study';
 
@@ -49,6 +49,10 @@ function ScanViewer({ record }: { record: StudyRecord }) {
 
   useEffect(() => {
     setMode('scan');
+  }, [record.id]);
+
+  useEffect(() => {
+    if (!record.preview) void loadPreview(record);
     if (needsVisual(record)) void loadVisual(record);
   }, [record]);
 
@@ -76,10 +80,13 @@ function ScanViewer({ record }: { record: StudyRecord }) {
     );
   }
 
-  const message =
-    source === 'batch'
-      ? 'Снимки из ZIP-архива не отображаются. Загрузите файл отдельно, чтобы увидеть изображение.'
-      : (preview?.error ?? 'Изображение недоступно для предпросмотра.');
+  const message = preview?.error
+    ? preview.error
+    : record.file
+      ? 'Загружаем снимок…'
+      : source === 'batch'
+        ? 'Не удалось найти этот снимок в архиве.'
+        : 'Изображение недоступно для предпросмотра.';
 
   return (
     <div className="viewer viewer--empty">
@@ -193,7 +200,7 @@ export function AnalysisPage() {
     .filter((r) => r.studyKey === active.studyKey)
     .sort((a, b) => a.receivedAt - b.receivedAt);
 
-  const studyUid = active.preview?.studyUid || active.result.study_uid;
+  const studyUid = active.result.study_uid || active.preview?.studyUid;
   const showUid = studyUid && !/^stub/i.test(studyUid);
 
   return (

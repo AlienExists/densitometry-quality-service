@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { StudyRecord, VisualState } from '@/types/study';
+import type { DicomPreview, StudyRecord, VisualState } from '@/types/study';
 
 interface ResultsState {
   records: StudyRecord[];
@@ -9,6 +9,7 @@ interface ResultsState {
   addRecords: (records: StudyRecord[], activate: boolean) => void;
   openRecord: (id: string) => void;
   setVisual: (id: string, state: VisualState) => void;
+  setPreview: (id: string, preview: DicomPreview) => void;
   disableVisuals: () => void;
 }
 
@@ -29,4 +30,9 @@ export const useResultsStore = create<ResultsState>()((set) => ({
   setVisual: (id, visual) => set((state) => ({ visuals: { ...state.visuals, [id]: visual } })),
 
   disableVisuals: () => set({ visualsSupported: false }),
+
+  setPreview: (id, preview) =>
+    set((state) => ({
+      records: state.records.map((record) => (record.id === id ? { ...record, preview } : record)),
+    })),
 }));
